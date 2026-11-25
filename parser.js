@@ -52,7 +52,9 @@ function getProduct() {
 
   const images = getImages(productSection);
 
-  return { id, name, isLiked, images };
+  const tags = getTags(productSection);
+
+  return { id, name, isLiked, tags, images };
 }
 
 // шаг 3: нашел две ловушки - первая дубль большого фото в figure - это копия выбранной миниатюры. Вторая - порядок, на тестовых страницах выбранной может оказаться не первая кнопка
@@ -83,4 +85,34 @@ function getImages(productSection) {
   });
 
   return images;
+}
+
+// шаг 4: теги по цветам. Ориентироваться на порядок нельзя: на тестовых страницах тегов может быть сколько угодно и в любой последовательности
+
+function getTags(productSection) {
+  const tags = {
+    category: [],
+    label: [],
+    discount: [],
+  };
+
+  const tagsElement = productSection.querySelector('.tags');
+  if (!tagsElement) {
+    return tags; 
+  }
+
+  const tagElements = tagsElement.querySelectorAll('span');
+  tagElements.forEach((tagElement) => {
+    const text = tagElement.textContent.trim();
+
+    if (tagElement.classList.contains('green')) {
+      tags.category.push(text);
+    } else if (tagElement.classList.contains('blue')) {
+      tags.label.push(text);
+    } else if (tagElement.classList.contains('red')) {
+      tags.discount.push(text);
+    }
+  });
+
+  return tags;
 }
