@@ -58,6 +58,8 @@ function getProduct() {
 
   const properties = getProperties(productSection);
 
+  const description = getDescription(productSection);
+
   return {
     id,
     name,
@@ -69,6 +71,7 @@ function getProduct() {
     discountPercent: priceData.discountPercent,
     currency: priceData.currency,
     properties,
+    description,
     images,
   };
 }
@@ -206,4 +209,32 @@ function getProperties(productSection) {
   });
 
   return properties;
+}
+
+// шаг 7. Товар: полное описание
+
+function removeAttributes(element) {
+  const attributeNames = element.getAttributeNames();
+
+  attributeNames.forEach((name) => {
+    element.removeAttribute(name);
+  });
+}
+
+function getDescription(productSection) {
+  const descriptionElement = productSection.querySelector('.description');
+  if (!descriptionElement) {
+    return '';
+  }
+
+  // работаем с копией: живую страницу не меняем
+  const descriptionCopy = descriptionElement.cloneNode(true);
+
+  const innerElements = descriptionCopy.querySelectorAll('*');
+  innerElements.forEach((element) => {
+    removeAttributes(element);
+  });
+
+  // innerHTML здесь читаем как строку, а не вставляем данные
+  return descriptionCopy.innerHTML.trim();
 }
