@@ -1,44 +1,53 @@
 // @todo: напишите здесь код парсера
 
 function parsePage() {
-    return {
-        meta: getMeta(),
-        product: getProduct(),
-        suggested: getSuggested(),
-        reviews: getReviews(),
-    };
+  return {
+    meta: getMeta(),
+    product: getProduct(),
+    suggested: getSuggested(),
+    reviews: getReviews(),
+  };
 }
 
 window.parsePage = parsePage;
 
-// Мета-данные живут в <head> и в теге <html>, не будем искать по видимой части страницы
+// Отрезаем название сайта: "About Vite — Modern Development Tool" → "About Vite"
+function removeSiteName(titleText) {
+  return titleText.split('—')[0].trim();
+}
 
+// Мета-данные живут в <head> и в теге <html>, не ищем их по видимой части страницы
 function getMeta() {
   const language = document.documentElement.lang;
 
-  const fullTitle = document.title;
-  const title = fullTitle.split('—')[0].trim();
+  const title = removeSiteName(document.title);
 
   const descriptionMeta = document.querySelector('meta[name="description"]');
   const description = descriptionMeta.content.trim();
 
   const keywordsMeta = document.querySelector('meta[name="keywords"]');
-
-  const keywords = keywordsMeta.content.split(',');
+  // триммим каждое слово: пробелы после запятых эталон не содержит
+  const keywords = keywordsMeta.content.split(',').map((word) => word.trim());
 
   const opengraph = {};
   const ogMetas = document.querySelectorAll('meta[property^="og:"]');
   ogMetas.forEach((meta) => {
     const property = meta.getAttribute('property');
-    const key = property.slice(3); 
-    opengraph[key] = meta.content.trim();
+    const key = property.slice(3); // отрезаем префикс 'og:'
+    const value = meta.content.trim();
+
+    // og:title содержит полный заголовок с названием сайта — режем, как и <title>
+    if (key === 'title') {
+      opengraph[key] = removeSiteName(value);
+    } else {
+      opengraph[key] = value;
+    }
   });
 
   return { title, description, keywords, language, opengraph };
 }
 
-// шаг 2: Товар: id, название, лайк - Все три поля лежат внутри секции .product
-
+// Товар: id, название, лайк — все три поля лежат внутри секции .product
 function getProduct() {
   const productSection = document.querySelector('.product');
 
@@ -51,13 +60,9 @@ function getProduct() {
   const isLiked = likeButton.classList.contains('active');
 
   const images = getImages(productSection);
-
   const tags = getTags(productSection);
-
   const priceData = getPriceData(productSection);
-
   const properties = getProperties(productSection);
-
   const description = getDescription(productSection);
 
   return {
@@ -76,8 +81,8 @@ function getProduct() {
   };
 }
 
-// шаг 3: нашел две ловушки - первая дубль большого фото в figure - это копия выбранной миниатюры. Вторая - порядок, на тестовых страницах выбранной может оказаться не первая кнопка
-
+// Две ловушки: большое фото в figure — копия выбранной миниатюры (не дублируем);
+// выбранная кнопка помечена disabled и может стоять не первой
 function getImageData(img) {
   return {
     preview: img.src,
@@ -106,8 +111,8 @@ function getImages(productSection) {
   return images;
 }
 
-// шаг 4: теги по цветам. Ориентироваться на порядок нельзя: на тестовых страницах тегов может быть сколько угодно и в любой последовательности
-
+// Теги по цветам: зелёный — category, синий — label, красный — discount.
+// Порядок и количество случайные, ориентир — только цвет
 function getTags(productSection) {
   const tags = {
     category: [],
@@ -117,7 +122,7 @@ function getTags(productSection) {
 
   const tagsElement = productSection.querySelector('.tags');
   if (!tagsElement) {
-    return tags; 
+    return tags; // блока может не быть — по условию это нормально
   }
 
   const tagElements = tagsElement.querySelectorAll('span');
@@ -136,14 +141,15 @@ function getTags(productSection) {
   return tags;
 }
 
-// шаг 5. Товар: цены, валюта и скидка. Нужно отделить текст от span
-
+// Цены, валюта, скидка
 const currencyCodes = {
   '₽': 'RUB',
   '$': 'USD',
   '€': 'EUR',
 };
 
+// Только режет строку "₽50" на сумму (строкой) и код валюты.
+// В число превращает тот, кому нужно число
 function parsePriceText(priceText) {
   const text = priceText.trim();
   const symbol = text[0];
@@ -163,6 +169,7 @@ function getPriceData(productSection) {
   const priceElement = productSection.querySelector('.price');
   const oldPriceElement = priceElement.querySelector('span');
 
+  // копия блока: удаляем старую цену в копии, чтобы не менять живую страницу
   const priceCopy = priceElement.cloneNode(true);
   const oldPriceInCopy = priceCopy.querySelector('span');
   if (oldPriceInCopy) {
@@ -173,7 +180,7 @@ function getPriceData(productSection) {
   const price = Number(currentPrice.amount);
   const currency = currentPrice.currency;
 
-  let oldPrice = price;
+  let oldPrice = price; // скидки нет — старая цена равна текущей
   if (oldPriceElement) {
     oldPrice = Number(parsePriceText(oldPriceElement.textContent).amount);
   }
@@ -189,8 +196,7 @@ function getPriceData(productSection) {
   };
 }
 
-// шаг 6. Товар: свойства
-
+// Свойства: каждый li — пара span (ключ, значение), накапливаем в объект
 function getProperties(productSection) {
   const properties = {};
 
@@ -211,9 +217,8 @@ function getProperties(productSection) {
   return properties;
 }
 
-// шаг 7. Товар: полное описание
-
 function removeAttributes(element) {
+  // снимок имён: живую коллекцию attributes нельзя удалять по ходу перебора
   const attributeNames = element.getAttributeNames();
 
   attributeNames.forEach((name) => {
@@ -239,10 +244,8 @@ function getDescription(productSection) {
   return descriptionCopy.innerHTML.trim();
 }
 
-// шаг 8. Дополнительные товары. Карточки лежат в секции .suggested, каждая — это article с картинкой, h3 (название), b (цена) и p (описание). 
-// Обходим их и превращаем в массив объектов
-// нашел ловушку - на странице article есть и в обзорах
-
+// Дополнительные товары: article ищем только внутри .suggested,
+// иначе в массив попадут обзоры
 function getSuggestedItem(article) {
   const imageElement = article.querySelector('img');
   const nameElement = article.querySelector('h3');
@@ -276,10 +279,8 @@ function getSuggested() {
   return suggested;
 }
 
-// шаг 9. Обзоры: Карточки обзоров лежат в секции .reviews, каждая — article. 
-// Структура та же, что в шаге 8, поэтому и код будет по тому же образцу: 
-// находим секцию → перебираем её article → читаем одну карточку отдельной функцией.
-
+// Обзоры: рейтинг — количество .filled; имя автора ищем внутри .author,
+// иначе поймаем span-звезду
 function formatDate(dateText) {
   return dateText.trim().split('/').join('.');
 }
