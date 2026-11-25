@@ -4,7 +4,7 @@ function parsePage() {
     return {
         meta: getMeta(),
         product: getProduct(),
-        suggested: [],
+        suggested: getSuggested(),
         reviews: []
     };
 }
@@ -147,7 +147,7 @@ const currencyCodes = {
 function parsePriceText(priceText) {
   const text = priceText.trim();
   const symbol = text[0];
-  const amount = Number(text.slice(1).trim());
+  const amount = text.slice(1).trim();
 
   return { amount, currency: currencyCodes[symbol] };
 }
@@ -170,12 +170,12 @@ function getPriceData(productSection) {
   }
 
   const currentPrice = parsePriceText(priceCopy.textContent);
-  const price = currentPrice.amount;
+  const price = Number(currentPrice.amount);
   const currency = currentPrice.currency;
 
   let oldPrice = price;
   if (oldPriceElement) {
-    oldPrice = parsePriceText(oldPriceElement.textContent).amount;
+    oldPrice = Number(parsePriceText(oldPriceElement.textContent).amount);
   }
 
   const discountData = calculateDiscount(price, oldPrice);
@@ -237,4 +237,41 @@ function getDescription(productSection) {
 
   // innerHTML здесь читаем как строку, а не вставляем данные
   return descriptionCopy.innerHTML.trim();
+}
+
+// шаг 8. Дополнительные товары. Карточки лежат в секции .suggested, каждая — это article с картинкой, h3 (название), b (цена) и p (описание). 
+// Обходим их и превращаем в массив объектов
+// нашел ловушку - на странице article есть и в обзорах
+
+function getSuggestedItem(article) {
+  const imageElement = article.querySelector('img');
+  const nameElement = article.querySelector('h3');
+  const descriptionElement = article.querySelector('p');
+  const priceElement = article.querySelector('b');
+
+  const priceData = parsePriceText(priceElement.textContent);
+
+  return {
+    name: nameElement.textContent.trim(),
+    description: descriptionElement.textContent.trim(),
+    image: imageElement.src,
+    price: priceData.amount, // строка: в образце цена доп. товара в кавычках
+    currency: priceData.currency,
+  };
+}
+
+function getSuggested() {
+  const suggested = [];
+
+  const suggestedSection = document.querySelector('.suggested');
+  if (!suggestedSection) {
+    return suggested;
+  }
+
+  const articles = suggestedSection.querySelectorAll('article');
+  articles.forEach((article) => {
+    suggested.push(getSuggestedItem(article));
+  });
+
+  return suggested;
 }
