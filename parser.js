@@ -50,5 +50,37 @@ function getProduct() {
   const likeButton = productSection.querySelector('.like');
   const isLiked = likeButton.classList.contains('active');
 
-  return { id, name, isLiked };
+  const images = getImages(productSection);
+
+  return { id, name, isLiked, images };
+}
+
+// шаг 3: нашел две ловушки - первая дубль большого фото в figure - это копия выбранной миниатюры. Вторая - порядок, на тестовых страницах выбранной может оказаться не первая кнопка
+
+function getImageData(img) {
+  return {
+    preview: img.src,
+    full: img.dataset.src,
+    alt: img.alt.trim(),
+  };
+}
+
+function getImages(productSection) {
+  const thumbnailsNav = productSection.querySelector('.preview nav');
+  const selectedButton = thumbnailsNav.querySelector('button[disabled]');
+  const thumbnailButtons = thumbnailsNav.querySelectorAll('button');
+
+  const images = [];
+
+  const selectedImg = selectedButton.querySelector('img');
+  images.push(getImageData(selectedImg));
+
+  thumbnailButtons.forEach((button) => {
+    if (button !== selectedButton) {
+      const img = button.querySelector('img');
+      images.push(getImageData(img));
+    }
+  });
+
+  return images;
 }
