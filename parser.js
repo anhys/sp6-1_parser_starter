@@ -5,7 +5,7 @@ function parsePage() {
         meta: getMeta(),
         product: getProduct(),
         suggested: getSuggested(),
-        reviews: []
+        reviews: getReviews(),
     };
 }
 
@@ -274,4 +274,51 @@ function getSuggested() {
   });
 
   return suggested;
+}
+
+// шаг 9. Обзоры: Карточки обзоров лежат в секции .reviews, каждая — article. 
+// Структура та же, что в шаге 8, поэтому и код будет по тому же образцу: 
+// находим секцию → перебираем её article → читаем одну карточку отдельной функцией.
+
+function formatDate(dateText) {
+  return dateText.trim().split('/').join('.');
+}
+
+function getReviewItem(article) {
+  const ratingElement = article.querySelector('.rating');
+  const titleElement = article.querySelector('h3');
+  const descriptionElement = article.querySelector('p');
+  const authorElement = article.querySelector('.author');
+
+  const filledStars = ratingElement.querySelectorAll('.filled');
+  const avatarElement = authorElement.querySelector('img');
+  const nameElement = authorElement.querySelector('span');
+  const dateElement = authorElement.querySelector('i');
+
+  return {
+    rating: filledStars.length,
+    author: {
+      avatar: avatarElement.src,
+      name: nameElement.textContent.trim(),
+    },
+    title: titleElement.textContent.trim(),
+    description: descriptionElement.textContent.trim(),
+    date: formatDate(dateElement.textContent),
+  };
+}
+
+function getReviews() {
+  const reviews = [];
+
+  const reviewsSection = document.querySelector('.reviews');
+  if (!reviewsSection) {
+    return reviews;
+  }
+
+  const articles = reviewsSection.querySelectorAll('article');
+  articles.forEach((article) => {
+    reviews.push(getReviewItem(article));
+  });
+
+  return reviews;
 }
