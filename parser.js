@@ -3,13 +3,15 @@
 function parsePage() {
     return {
         meta: getMeta(),
-        product: {},
+        product: getProduct(),
         suggested: [],
         reviews: []
     };
 }
 
 window.parsePage = parsePage;
+
+// Мета-данные живут в <head> и в теге <html>, не будем искать по видимой части страницы
 
 function getMeta() {
   const language = document.documentElement.lang;
@@ -33,4 +35,20 @@ function getMeta() {
   });
 
   return { title, description, keywords, language, opengraph };
+}
+
+// шаг 2: Товар: id, название, лайк - Все три поля лежат внутри секции .product
+
+function getProduct() {
+  const productSection = document.querySelector('.product');
+
+  const id = productSection.dataset.id;
+
+  const nameElement = productSection.querySelector('h1');
+  const name = nameElement.textContent.trim();
+
+  const likeButton = productSection.querySelector('.like');
+  const isLiked = likeButton.classList.contains('active');
+
+  return { id, name, isLiked };
 }
