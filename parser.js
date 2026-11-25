@@ -56,6 +56,8 @@ function getProduct() {
 
   const priceData = getPriceData(productSection);
 
+  const properties = getProperties(productSection);
+
   return {
     id,
     name,
@@ -66,6 +68,7 @@ function getProduct() {
     discount: priceData.discount,
     discountPercent: priceData.discountPercent,
     currency: priceData.currency,
+    properties,
     images,
   };
 }
@@ -181,4 +184,26 @@ function getPriceData(productSection) {
     discountPercent: discountData.discountPercent,
     currency,
   };
+}
+
+// шаг 6. Товар: свойства
+
+function getProperties(productSection) {
+  const properties = {};
+
+  const propertiesElement = productSection.querySelector('.properties');
+  if (!propertiesElement) {
+    return properties;
+  }
+
+  const propertyItems = propertiesElement.querySelectorAll('li');
+  propertyItems.forEach((item) => {
+    const spans = item.querySelectorAll('span');
+    const key = spans[0].textContent.trim();
+    const value = spans[1].textContent.trim();
+
+    properties[key] = value;
+  });
+
+  return properties;
 }
