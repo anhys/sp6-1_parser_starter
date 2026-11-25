@@ -1,5 +1,37 @@
 // @todo: напишите здесь код парсера
 
+const selectors = {
+  metaDescription: 'meta[name="description"]',
+  metaKeywords: 'meta[name="keywords"]',
+  metaOpengraph: 'meta[property^="og:"]',
+  product: '.product',
+  like: '.like',
+  thumbnails: '.preview nav',
+  selectedThumbnail: 'button[disabled]',
+  tags: '.tags',
+  price: '.price',
+  properties: '.properties',
+  description: '.description',
+  suggested: '.suggested',
+  reviews: '.reviews',
+  rating: '.rating',
+  filledStars: '.filled',
+  author: '.author',
+};
+
+const classNames = {
+  liked: 'active',
+  tagCategory: 'green',
+  tagLabel: 'blue',
+  tagDiscount: 'red',
+};
+
+const currencyCodes = {
+  '₽': 'RUB',
+  '$': 'USD',
+  '€': 'EUR',
+};
+
 function parsePage() {
   return {
     meta: getMeta(),
@@ -22,15 +54,15 @@ function getMeta() {
 
   const title = removeSiteName(document.title);
 
-  const descriptionMeta = document.querySelector('meta[name="description"]');
+  const descriptionMeta = document.querySelector(selectors.metaDescription);
   const description = descriptionMeta.content.trim();
 
-  const keywordsMeta = document.querySelector('meta[name="keywords"]');
+  const keywordsMeta = document.querySelector(selectors.metaKeywords);
   // триммим каждое слово: пробелы после запятых эталон не содержит
   const keywords = keywordsMeta.content.split(',').map((word) => word.trim());
 
   const opengraph = {};
-  const ogMetas = document.querySelectorAll('meta[property^="og:"]');
+  const ogMetas = document.querySelectorAll(selectors.metaOpengraph);
   ogMetas.forEach((meta) => {
     const property = meta.getAttribute('property');
     const key = property.slice(3); // отрезаем префикс 'og:'
@@ -49,15 +81,15 @@ function getMeta() {
 
 // Товар: id, название, лайк — все три поля лежат внутри секции .product
 function getProduct() {
-  const productSection = document.querySelector('.product');
+  const productSection = document.querySelector(selectors.product);
 
   const id = productSection.dataset.id;
 
   const nameElement = productSection.querySelector('h1');
   const name = nameElement.textContent.trim();
 
-  const likeButton = productSection.querySelector('.like');
-  const isLiked = likeButton.classList.contains('active');
+  const likeButton = productSection.querySelector(selectors.like);
+  const isLiked = likeButton.classList.contains(classNames.liked);
 
   const images = getImages(productSection);
   const tags = getTags(productSection);
@@ -92,8 +124,8 @@ function getImageData(img) {
 }
 
 function getImages(productSection) {
-  const thumbnailsNav = productSection.querySelector('.preview nav');
-  const selectedButton = thumbnailsNav.querySelector('button[disabled]');
+  const thumbnailsNav = productSection.querySelector(selectors.thumbnails);
+  const selectedButton = thumbnailsNav.querySelector(selectors.selectedThumbnail);
   const thumbnailButtons = thumbnailsNav.querySelectorAll('button');
 
   const images = [];
@@ -120,7 +152,7 @@ function getTags(productSection) {
     discount: [],
   };
 
-  const tagsElement = productSection.querySelector('.tags');
+  const tagsElement = productSection.querySelector(selectors.tags);
   if (!tagsElement) {
     return tags; // блока может не быть — по условию это нормально
   }
@@ -129,24 +161,17 @@ function getTags(productSection) {
   tagElements.forEach((tagElement) => {
     const text = tagElement.textContent.trim();
 
-    if (tagElement.classList.contains('green')) {
+    if (tagElement.classList.contains(classNames.tagCategory)) {
       tags.category.push(text);
-    } else if (tagElement.classList.contains('blue')) {
+    } else if (tagElement.classList.contains(classNames.tagLabel)) {
       tags.label.push(text);
-    } else if (tagElement.classList.contains('red')) {
+    } else if (tagElement.classList.contains(classNames.tagDiscount)) {
       tags.discount.push(text);
     }
   });
 
   return tags;
 }
-
-// Цены, валюта, скидка
-const currencyCodes = {
-  '₽': 'RUB',
-  '$': 'USD',
-  '€': 'EUR',
-};
 
 // Только режет строку "₽50" на сумму (строкой) и код валюты.
 // В число превращает тот, кому нужно число
@@ -166,7 +191,7 @@ function calculateDiscount(price, oldPrice) {
 }
 
 function getPriceData(productSection) {
-  const priceElement = productSection.querySelector('.price');
+  const priceElement = productSection.querySelector(selectors.price);
   const oldPriceElement = priceElement.querySelector('span');
 
   // копия блока: удаляем старую цену в копии, чтобы не менять живую страницу
@@ -200,7 +225,7 @@ function getPriceData(productSection) {
 function getProperties(productSection) {
   const properties = {};
 
-  const propertiesElement = productSection.querySelector('.properties');
+  const propertiesElement = productSection.querySelector(selectors.properties);
   if (!propertiesElement) {
     return properties;
   }
@@ -227,7 +252,7 @@ function removeAttributes(element) {
 }
 
 function getDescription(productSection) {
-  const descriptionElement = productSection.querySelector('.description');
+  const descriptionElement = productSection.querySelector(selectors.description);
   if (!descriptionElement) {
     return '';
   }
@@ -266,7 +291,7 @@ function getSuggestedItem(article) {
 function getSuggested() {
   const suggested = [];
 
-  const suggestedSection = document.querySelector('.suggested');
+  const suggestedSection = document.querySelector(selectors.suggested);
   if (!suggestedSection) {
     return suggested;
   }
@@ -286,12 +311,12 @@ function formatDate(dateText) {
 }
 
 function getReviewItem(article) {
-  const ratingElement = article.querySelector('.rating');
+  const ratingElement = article.querySelector(selectors.rating);
   const titleElement = article.querySelector('h3');
   const descriptionElement = article.querySelector('p');
-  const authorElement = article.querySelector('.author');
+  const authorElement = article.querySelector(selectors.author);
 
-  const filledStars = ratingElement.querySelectorAll('.filled');
+  const filledStars = ratingElement.querySelectorAll(selectors.filledStars);
   const avatarElement = authorElement.querySelector('img');
   const nameElement = authorElement.querySelector('span');
   const dateElement = authorElement.querySelector('i');
@@ -311,7 +336,7 @@ function getReviewItem(article) {
 function getReviews() {
   const reviews = [];
 
-  const reviewsSection = document.querySelector('.reviews');
+  const reviewsSection = document.querySelector(selectors.reviews);
   if (!reviewsSection) {
     return reviews;
   }
